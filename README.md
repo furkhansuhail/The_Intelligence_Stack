@@ -1,4 +1,4 @@
-# The Architecture of Machine Learning
+# The Architecture of Machine Learning and AI (Ongoing)
 
 A multi-paradigm Streamlit reference hub for ML concepts — theory, visual breakdowns,
 and runnable step-by-step implementations.
