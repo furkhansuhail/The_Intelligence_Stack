@@ -1777,6 +1777,75 @@ print(f"""
 """)
 ''',
     },
+
+    # ── Trigger: Logistic Regression ─────────────────────────────────
+    "▶ Run: Logistic Regression": {
+        "description": (
+            "Runs 00_LogisticRegression.py from the Implementation folder. "
+            "Logistic Regression for Classification "
+        ),
+        "runnable": True,
+        "code": '''
+import os, sys
+from pathlib import Path
+
+_impl = (
+    Path(os.getcwd())
+    / "Implementation"
+    / "Supervised Model"
+    / "Classification"
+    / "00_LogisticRegression.py"
+)
+
+if not _impl.exists():
+    print(f"[ERROR] File not found: {_impl}")
+    print(f"  CWD is: {os.getcwd()}")
+    print("  Expected structure:  <project_root>/Implementation/Supervised Model/Classification/")
+    sys.exit(1)
+
+print(f"Running: {_impl}")
+print("=" * 65)
+exec(
+    compile(_impl.read_text(encoding="utf-8"), str(_impl), "exec"),
+    {"__name__": "__main__", "__file__": str(_impl)}
+)
+''',
+    },
+
+    # ── Trigger: Logistic Regression ─────────────────────────────────
+    "▶ Run: KNN Classification": {
+        "description": (
+            "Runs 01_KNN_Classification.py from the Implementation folder. "
+            "KNN for Classification "
+        ),
+        "runnable": True,
+        "code": '''
+import os, sys
+from pathlib import Path
+
+_impl = (
+    Path(os.getcwd())
+    / "Implementation"
+    / "Supervised Model"
+    / "Classification"
+    / "01_KNN_Classification.py"
+)
+
+if not _impl.exists():
+    print(f"[ERROR] File not found: {_impl}")
+    print(f"  CWD is: {os.getcwd()}")
+    print("  Expected structure:  <project_root>/Implementation/Supervised Model/Classification/")
+    sys.exit(1)
+
+print(f"Running: {_impl}")
+print("=" * 65)
+exec(
+    compile(_impl.read_text(encoding="utf-8"), str(_impl), "exec"),
+    {"__name__": "__main__", "__file__": str(_impl)}
+)
+''',
+    },
+
 }
 
 VISUAL_HTML = ""

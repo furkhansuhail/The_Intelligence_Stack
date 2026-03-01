@@ -11,9 +11,10 @@ of the ideas introduced here.
 """
 
 import base64
+import math
 import os
-
-
+import re
+import textwrap
 
 DISPLAY_NAME = "01 · Linear Regression"
 ICON         = "📈"
@@ -25,10 +26,41 @@ SUBTITLE     = "The foundation of prediction — fitting a line to minimize erro
 # ─────────────────────────────────────────────────────────────────────────────
 
 THEORY = """
+What is Regression in Machine Learning ?
+
+In machine learning and AI, regression is a type of task where the goal is to predict a continuous numerical value
+based on input data.
+
+The core idea is that you're trying to find the relationship between input variables (called features) and a 
+numerical output. For example:
+
+    * Predict a house price based on square footage, location, and number of bedrooms
+    * Predict a person's salary based on years of experience and education
+    * Predict tomorrow's temperature based on historical weather data
+
+**How it works at a high level:** you feed the model lots of examples with known inputs and outputs, and the model learns
+a mathematical function that maps inputs to outputs. Once trained, it can take new inputs it's never seen and produce a 
+predicted number.
+
+The most classic example is linear regression, which tries to fit a straight line through your data. 
+If you plotted house size on the x-axis and price on the y-axis, linear regression finds the line that best fits all 
+your data points, then uses that line to predict prices for new houses.
+
+Other regression algorithms include decision tree regression, random forest regression, and neural network regression — 
+these can capture more complex, non-linear relationships.
+
+**How is it different from classification ?** This is the key distinction in ML. 
+Regression predicts a number (what will the price be?), while classification predicts a category (is this email spam or not spam?). 
+If your output is a continuous value, it's a regression problem. If it's a discrete label, it's a classification problem.
+So in short — regression is about teaching a model to make numerical predictions by learning patterns from past data.
+
+
 ## 01 · Linear Regression
 
 Linear Regression is the bedrock of supervised learning. It models the relationship between
 a continuous target variable `y` and one or more input features `X` by fitting a linear equation.
+
+### Part 1: The Model — What Linear Regression Computes
 
 ### What is Linear Regression?
 
@@ -243,7 +275,7 @@ in machine learning.
 ### The Loss Function — How Do We Measure "Best Fit"?
 
 We minimise the **Mean Squared Error (MSE)**:
-        
+
         MSE = (1/n) Σ (yᵢ - ŷᵢ)²
 
 ```
@@ -390,14 +422,7 @@ distribution of my errors?" — not an arbitrary choice.
 
 ---
 
-#### Assumptions (The LINE acronym)
-
-- **L**inearity — relationship between X and y is linear
-- **I**ndependence — residuals are independent of each other
-- **N**ormality — residuals are normally distributed
-- **E**qual variance — homoscedasticity (residuals have constant variance)
-
-Violating these doesn't break the model, but affects interpretation and inference.
+*(The LINE assumptions — Linearity, Independence, Normality, Equal Variance — are covered in full depth in Part 5.)*
 
 
 ### Part 3: Solving It — Two Approaches
@@ -866,6 +891,28 @@ inference when its assumptions are violated.
 
 ## Part 6: Regularisation — Preventing Overfitting
 
+When you train a model, it learns patterns from your training data. But sometimes it learns too well — it memorizes the 
+training data including all its noise and quirks, and then performs poorly on new unseen data. This is overfitting.
+
+Think of it like a student who memorizes every past exam paper word for word, but then fails when the real exam asks 
+slightly different questions. They over-fitted to the past papers.
+
+A model that overfits will have:
+
+Very low error on training data
+Very high error on test/unseen data
+
+        Total Loss = Original Loss + λ * Penalty Term
+
+Where λ (lambda) is a hyperparameter that controls how strongly you want to regularize. 
+A higher lambda means stronger regularization.
+
+
+What Regularization Does
+Regularization adds a penalty term to the loss function to discourage the model from becoming too complex. It essentially says to the model: "Yes, fit the data — but don't go overboard."
+
+The general idea looks like this:
+
 Overfitting = model memorises training noise. Fix by adding a penalty term to the loss:
 
 | Method         | Penalty        | Effect                                          |
@@ -873,6 +920,9 @@ Overfitting = model memorises training noise. Fix by adding a penalty term to th
 | **Ridge (L2)** | `λ Σ wᵢ²`      | Shrinks weights, keeps all features             |
 | **Lasso (L1)** | `λ Σ |wᵢ|`     | Forces some weights to zero (feature selection) |
 | **ElasticNet** | Mix of L1 + L2 | Best of both                                    |
+
+
+
 
 
 **What is Overfitting?**
@@ -898,11 +948,11 @@ Every model's generalisation error can be decomposed as:
 - **Bias**: error from wrong assumptions (e.g., fitting a line to a quadratic curve).
 
         High bias = underfitting.
-      
+
 - **Variance**: error from sensitivity to small fluctuations in training data.
-  
+
         High variance = overfitting.
-        
+
 - **Irreducible noise**: randomness in the data itself. Cannot be fixed.
 
 Regularisation increases bias slightly (simpler model) to reduce variance a lot
@@ -927,6 +977,10 @@ Regularisation increases bias slightly (simpler model) to reduce variance a lot
     # =======================================================================================# 
 
 ### Ridge Regression (L2 Regularisation):
+
+        Total Loss = Original Loss + λ * Σ(weights²)
+
+L2 Regularization (Ridge) adds the sum of the squared values of the weights as the penalty:
 
 Add the sum of squared weights as a penalty to the MSE loss:
 
@@ -954,6 +1008,10 @@ to exactly zero. It keeps all features in the model, just with diminished influe
 Think of it as pulling all weights toward the origin simultaneously.
 
 ### Lasso Regression (L1 Regularisation):
+
+    Total Loss = Original Loss + λ * Σ|weights|
+
+L1 Regularization (Lasso) adds the sum of the absolute values of the weights as the penalty:
 
 Replace the squared penalty with the sum of absolute values:
 
@@ -1016,6 +1074,22 @@ Combines both penalties:
 Where ρ (rho) controls the mix between L1 and L2. When ρ=1, it's pure Lasso;
 when ρ=0, it's pure Ridge. ElasticNet inherits the sparsity of Lasso and the
 grouping behaviour of Ridge (correlated features get similar non-zero weights).
+
+
+**Other Forms of Regularization**
+
+Beyond L1 and L2, regularization is a broader concept that appears in many forms across machine learning:
+
+Dropout is used in neural networks. During training, random neurons are switched off at each step, 
+forcing the network to not rely too heavily on any single neuron. This prevents co-dependency between neurons.
+
+Early Stopping monitors validation loss during training and stops the training process before the model starts to overfit — 
+even if it could keep training.
+
+Data Augmentation artificially increases the size and variety of your training data (flipping images, adding noise, etc.), 
+making it harder for the model to memorize the training set.
+
+Batch Normalization normalizes the inputs to each layer, which has a regularizing effect by reducing internal covariate shift.
 
 ---
 
@@ -1174,6 +1248,102 @@ networks their expressive power.
 
 Same structure. Different choices. Each choice is optimal for a specific task.
 
+
+
+##### Extra
+
+## **Simple Linear Regression vs Bayesian Linear Regression**
+
+The best way to understand the difference is through how each one thinks about uncertainty.
+
+**Simple Linear Regression — "Give me one answer"**
+
+Simple Linear Regression is a deterministic approach. You feed it data, it crunches the OLS formula, 
+and it hands you back one fixed number for the slope and one fixed number for the intercept. 
+That's it. It's confident and committed — it gives you a single best-fit line and never looks back.
+
+For example, after training it might tell you:
+Slope     = 2.847
+Intercept = 5.123
+
+These are point estimates. There is no sense of "maybe the slope is somewhere between 2.5 and 3.1" — it just picks one 
+value and moves on. If your data is noisy or limited, this can be dangerously overconfident because the model doesn't 
+acknowledge that uncertainty at all.
+
+
+**Bayesian Linear Regression — "Give me a range of plausible answers"**
+
+Bayesian Linear Regression takes a completely different philosophical stance. Instead of treating slope and intercept 
+as fixed unknowns to be solved, it treats them as random variables with probability distributions. 
+It never gives you one answer — it gives you a distribution of answers, each with a probability attached.
+
+**It works in three stages:**
+
+**1. Prior** — Before seeing any data, you state your belief about what the slope and intercept might be. 
+In the Pyro code you shared, this looked like:
+
+slope     = pyro.sample("slope",     dist.Normal(0., 10.))
+intercept = pyro.sample("intercept", dist.Normal(0., 10.))
+
+This says "I believe the slope is somewhere around 0, but it could reasonably be anywhere within a wide range." 
+This is your starting belief before the data speaks.
+
+**2. Likelihood** — The model then looks at the actual data and asks: given this data, how probable are different 
+values of slope and intercept? This updates your beliefs.
+
+**3. Posterior** — After combining the prior and the data, you get a posterior distribution — your updated belief 
+about what the slope and intercept are. Instead of slope = 2.847, you get something like 
+slope ~ Normal(mean=2.85, std=0.12), which tells you both the best guess AND how uncertain you are about it.
+
+THE CORE PHILOSOPHICAL DIFFERENCE
+(Simple Linear Regression vs Bayesian Linear Regression)
+
+
+COMPONENT                │ SIMPLE LINEAR REGRESSION            │ BAYESIAN LINEAR REGRESSION
+─────────────────────────┼─────────────────────────────────────┼────────────────────────────────────────
+Parameters               │ Fixed single values (point estimate)│ Probability distributions over weights
+                         │ w, b are deterministic              │ w, b are random variables
+─────────────────────────┼─────────────────────────────────────┼────────────────────────────────────────
+Output                   │ One regression line                 │ A family of plausible regression lines
+                         │ Single best-fit solution            │ Posterior distribution of functions
+─────────────────────────┼─────────────────────────────────────┼────────────────────────────────────────
+Uncertainty              │ Ignored                             │ Explicitly modeled
+                         │ No uncertainty quantification       │ Predictive uncertainty intervals
+─────────────────────────┼─────────────────────────────────────┼────────────────────────────────────────
+Prior Knowledge          │ Not used                            │ Incorporated via prior distributions
+                         │ Data-only learning                  │ Prior + Data → Posterior
+─────────────────────────┼─────────────────────────────────────┼────────────────────────────────────────
+Data Requirement         │ Works well with large datasets      │ Handles small data more gracefully
+                         │ Needs sufficient samples            │ Priors stabilize limited data regimes
+─────────────────────────┼─────────────────────────────────────┼────────────────────────────────────────
+Computation              │ Closed-form OLS or GD               │ Inference engine required
+                         │ (XᵀX)⁻¹Xᵀy                          │ SVI, MCMC, or Variational Inference
+─────────────────────────┼─────────────────────────────────────┼────────────────────────────────────────
+Interpretability         │ Very easy                           │ More complex
+                         │ Direct coefficients                 │ Must interpret posterior distributions
+─────────────────────────┼─────────────────────────────────────┼────────────────────────────────────────
+
+A Real-World Analogy
+Imagine you're trying to estimate how much a house is worth based on its size.
+
+Simple Linear Regression is like a junior appraiser who looks at the data and confidently says: "It's worth exactly £450,000."
+
+Bayesian Linear Regression is like a senior appraiser who says: "Based on what I already know about the market (prior), 
+and looking at this data, 
+I'd say it's most likely around £450,000 — but it could reasonably be anywhere from £420,000 to £480,000, 
+and here's the full probability breakdown."
+
+The Bayesian approach is more honest about what it doesn't know.
+
+**When to use which**
+
+Use Simple Linear Regression when you have plenty of clean data, you need a fast and interpretable result, 
+and you don't need to quantify uncertainty.
+
+Use Bayesian Linear Regression when you have limited or noisy data, you want to incorporate domain knowledge through 
+priors, or your decisions depend on understanding the range of possible outcomes rather than just a single best guess — 
+for example in medicine, finance, or scientific research.
+
 """
 # ─────────────────────────────────────────────────────────────────────────────
 # COMPLEXITY / COMPARISON TABLE
@@ -1193,7 +1363,51 @@ COMPLEXITY = """
 # ─────────────────────────────────────────────────────────────────────────────
 # OPERATIONS — Runnable code demonstrations
 # ─────────────────────────────────────────────────────────────────────────────
+"""
+================================================================================
+  ADDITIONS TO: supervised/topics/01_linear_regression.py
+================================================================================
 
+HOW TO INTEGRATE
+─────────────────────────────────────────────────────────────────────────────
+  1. Open supervised/topics/01_linear_regression.py
+  2. Find the OPERATIONS dict — it ends with a closing  }
+  3. Paste each block below BEFORE that final closing brace  }
+  4. Make sure every existing operation block ends with a comma  },
+     before you paste the new ones.
+
+WHAT THIS DOES
+─────────────────────────────────────────────────────────────────────────────
+  Adds one OPERATIONS entry per regression implementation file.
+  When you click ▶️ Run in the Step-by-Step tab, the app reads that
+  implementation file from disk (relative to CWD = app.py's directory)
+  and executes it, streaming its full output to the UI.
+
+  Each operation:
+    • Resolves the file path at runtime using os.getcwd()
+    • Checks the file exists and shows a clear error if not
+    • Exec's it in an isolated namespace so there's no variable leakage
+    • Prints the file path it ran, for easy debugging
+
+FOLDER STRUCTURE ASSUMED (matches your image)
+─────────────────────────────────────────────────────────────────────────────
+  app.py
+  supervised/
+    Implementation/
+      Supervised Model/
+        Linear Regression/
+          00_Simple Linear Regression.py
+          01_Bayesian Linear Regression.py
+          03_Ridge Regression-L2.py
+          04_Lasso Regression-L1.py
+          05_Elastic Net-L1andL2Comb.py
+    topics/
+      01_linear_regression.py   ← you are editing this file
+================================================================================
+"""
+
+
+VISUAL_HTML = ""  # Add your HTML visual breakdown here
 OPERATIONS = {
 
     "Linear Regression from Scratch": {
@@ -1211,10 +1425,10 @@ No sklearn, no black boxes. Every step is explained.
 Architecture:
                                      ŷᵢ = w₀ + w₁x₁ + w₂x₂ + ... + wₚxₚ
     x₁ ──(w₁)──┐
-                │
+               │
     x₂ ──(w₂)──┼──► [ Σ weighted sum + bias w₀ ] ──► ŷ  (no activation!)
-                │
-    xₚ ──(wₚ)──┘
+               │
+    xₚ ──(wₚ)───┘
 
 Loss:   MSE = (1/n) Σ (yᵢ - ŷᵢ)²
 Update: w  := w - α · ∇L(w)        where ∇L = (2/n) Xᵀ(Xw - y)
@@ -1882,10 +2096,256 @@ print(f"""
 """)
 ''',
     },
+
+# ── Trigger: Simple Linear Regression ───────────────────────────────────
+    "▶ Run: Simple Linear Regression": {
+        "description": (
+            "Runs 00_Simple Linear Regression.py from the Implementation folder. "
+            "OLS from scratch — slope, intercept, MSE, R², and a regression plot."
+        ),
+        "runnable": True,
+        "code": '''
+import os, sys
+from pathlib import Path
+
+_impl = (
+    Path(os.getcwd())
+    / "Implementation"
+    / "Supervised Model"
+    / "Regression"
+    / "00_Simple Linear Regression.py"
+)
+
+if not _impl.exists():
+    print(f"[ERROR] File not found: {_impl}")
+    print(f"  CWD is: {os.getcwd()}")
+    print("  Expected structure:  <project_root>/Implementation/Supervised Model/Regression/")
+    sys.exit(1)
+
+print(f"Running: {_impl}")
+print("=" * 65)
+exec(
+    compile(_impl.read_text(encoding="utf-8"), str(_impl), "exec"),
+    {"__name__": "__main__", "__file__": str(_impl)}
+)
+''',
+    },
+
+
+    # ── Trigger: Bayesian Linear Regression ─────────────────────────────────
+    "▶ Run: Bayesian Linear Regression": {
+        "description": (
+            "Runs 01_Bayesian Linear Regression.py from the Implementation folder. "
+            "Probabilistic weight estimation, posterior distributions, and "
+            "uncertainty quantification — contrasted against OLS."
+        ),
+        "runnable": True,
+        "code": '''
+import os, sys
+from pathlib import Path
+
+_impl = (
+    Path(os.getcwd())
+    / "Implementation"
+    / "Supervised Model"
+    / "Regression"
+    / "01_Bayesian Linear Regression.py"
+)
+
+if not _impl.exists():
+    print(f"[ERROR] File not found: {_impl}")
+    print(f"  CWD is: {os.getcwd()}")
+    print("  Expected structure:  <project_root>/Implementation/Supervised Model/Regression/")
+    sys.exit(1)
+
+print(f"Running: {_impl}")
+print("=" * 65)
+exec(
+    compile(_impl.read_text(encoding="utf-8"), str(_impl), "exec"),
+    {"__name__": "__main__", "__file__": str(_impl)}
+)
+''',
+    },
+
+
+    # ── Trigger: Ridge Regression (L2) ──────────────────────────────────────
+    "▶ Run: Ridge Regression (L2)": {
+        "description": (
+            "Runs 03_Ridge Regression-L2.py from the Implementation folder. "
+            "Closed-form (XᵀX + λI)⁻¹Xᵀy, weight shrinkage vs OLS, "
+            "and how lambda controls the bias-variance tradeoff."
+        ),
+        "runnable": True,
+        "code": '''
+import os, sys
+from pathlib import Path
+
+_impl = (
+    Path(os.getcwd())
+    / "Implementation"
+    / "Supervised Model"
+    / "Regression"
+    / "03_Ridge Regression-L2.py"
+)
+
+if not _impl.exists():
+    print(f"[ERROR] File not found: {_impl}")
+    print(f"  CWD is: {os.getcwd()}")
+    print("  Expected structure:  <project_root>/Implementation/Supervised Model/Regression/")
+    sys.exit(1)
+
+print(f"Running: {_impl}")
+print("=" * 65)
+exec(
+    compile(_impl.read_text(encoding="utf-8"), str(_impl), "exec"),
+    {"__name__": "__main__", "__file__": str(_impl)}
+)
+''',
+    },
+
+
+    # ── Trigger: Lasso Regression (L1) ──────────────────────────────────────
+    "▶ Run: Lasso Regression (L1)": {
+        "description": (
+            "Runs 04_Lasso Regression-L1.py from the Implementation folder. "
+            "Coordinate descent, soft thresholding, automatic feature selection, "
+            "and the regularisation path showing which features survive as λ increases."
+        ),
+        "runnable": True,
+        "code": '''
+import os, sys
+from pathlib import Path
+
+_impl = (
+    Path(os.getcwd())
+    / "Implementation"
+    / "Supervised Model"
+    / "Regression"
+    / "04_Lasso Regression-L1.py"
+)
+
+if not _impl.exists():
+    print(f"[ERROR] File not found: {_impl}")
+    print(f"  CWD is: {os.getcwd()}")
+    print("  Expected structure:  <project_root>/Implementation/Supervised Model/Regression/")
+    sys.exit(1)
+
+print(f"Running: {_impl}")
+print("=" * 65)
+exec(
+    compile(_impl.read_text(encoding="utf-8"), str(_impl), "exec"),
+    {"__name__": "__main__", "__file__": str(_impl)}
+)
+''',
+    },
+
+    # ── Trigger: Elastic Net - L1 and L2 Combination ──────────────────────────────────────
+    "▶ Run: ElasticNetRegression": {
+        "description": (
+            "Runs 05_Elastic Net-L1andL2Combo.py from the Implementation folder. "
+            "Coordinate descent, soft thresholding, automatic feature selection, "
+            "and the regularisation path showing which features survive as λ increases."
+        ),
+        "runnable": True,
+        "code": '''
+import os, sys
+from pathlib import Path
+
+_impl = (
+    Path(os.getcwd())
+    / "Implementation"
+    / "Supervised Model"
+    / "Regression"
+    / "05_Elastic Net-L1andL2Comb.py"
+)
+
+if not _impl.exists():
+    print(f"[ERROR] File not found: {_impl}")
+    print(f"  CWD is: {os.getcwd()}")
+    print("  Expected structure:  <project_root>/Implementation/Supervised Model/Regression/")
+    sys.exit(1)
+
+print(f"Running: {_impl}")
+print("=" * 65)
+exec(
+    compile(_impl.read_text(encoding="utf-8"), str(_impl), "exec"),
+    {"__name__": "__main__", "__file__": str(_impl)}
+)
+''',
+    },
+
+
+# ── Trigger: Ridge Regression (L2) ──────────────────────────────────────
+    "▶ Run: Ridge Regression (L2)": {
+        "description": (
+            "Runs 03_Ridge Regression-L2.py from the Implementation folder. "
+            "Closed-form (XᵀX + λI)⁻¹Xᵀy, weight shrinkage vs OLS, "
+            "and how lambda controls the bias-variance tradeoff."
+        ),
+        "runnable": True,
+        "code": '''
+import os, sys
+from pathlib import Path
+
+_impl = (
+    Path(os.getcwd())
+    / "Implementation"
+    / "Supervised Model"
+    / "Regression"
+    / "03_Ridge Regression-L2.py"
+)
+
+if not _impl.exists():
+    print(f"[ERROR] File not found: {_impl}")
+    print(f"  CWD is: {os.getcwd()}")
+    print("  Expected structure:  <project_root>/Implementation/Supervised Model/Regression/")
+    sys.exit(1)
+
+print(f"Running: {_impl}")
+print("=" * 65)
+exec(
+    compile(_impl.read_text(encoding="utf-8"), str(_impl), "exec"),
+    {"__name__": "__main__", "__file__": str(_impl)}
+)
+''',
+    },
+
+    # ── Trigger: Ridge Regression (L2) ──────────────────────────────────────
+    "▶ Run: KNN Regression": {
+        "description": (
+            "Runs 06_KNN_Regression.py from the Implementation folder. "
+            "Knn Regression Model Explanation"
+        ),
+        "runnable": True,
+        "code": '''
+import os, sys
+from pathlib import Path
+
+_impl = (
+    Path(os.getcwd())
+    / "Implementation"
+    / "Supervised Model"
+    / "Regression"
+    / "06_KNN_Regression.py"
+)
+
+if not _impl.exists():
+    print(f"[ERROR] File not found: {_impl}")
+    print(f"  CWD is: {os.getcwd()}")
+    print("  Expected structure:  <project_root>/Implementation/Supervised Model/Regression/")
+    sys.exit(1)
+
+print(f"Running: {_impl}")
+print("=" * 65)
+exec(
+    compile(_impl.read_text(encoding="utf-8"), str(_impl), "exec"),
+    {"__name__": "__main__", "__file__": str(_impl)}
+)
+''',
+    },
+
+
 }
-
-
-VISUAL_HTML = ""  # Add your HTML visual breakdown here
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1996,12 +2456,223 @@ COMPLEXITY = """
 """
 
 
+# def get_content():
+#     """Return all content for this topic module."""
+#     return {
+#         "theory":               THEORY,
+#         "theory_raw":           THEORY,
+#         "complexity":           COMPLEXITY,
+#         "operations":           OPERATIONS,
+#         "interactive_components": [],
+#     }
+
+
+# # Dedent all operation code strings — they're indented inside the dict literal,
+# # so each line has ~20 leading spaces. textwrap.dedent removes the common indent,
+# # producing clean left-aligned code that runs without IndentationError.
+# for _op in OPERATIONS.values():
+#     _op["code"] = textwrap.dedent(_op["code"]).strip()
+#
+# # ─────────────────────────────────────────────────────────────────────────────
+# # RENDER OPERATIONS (Streamlit)
+# # ─────────────────────────────────────────────────────────────────────────────
+#
+# def render_operations(st, scripts_dir=None, main_script=None):
+#     """Render all operations with code display and optional run buttons."""
+#     import streamlit as st  # local import so module stays importable without st
+#
+#     st.markdown("---")
+#     st.subheader("⚙️ Operations")
+#
+#     if scripts_dir is None:
+#         scripts_dir = None
+#     if main_script is None:
+#         main_script = _MAIN_SCRIPT
+#
+#     scripts_available = main_script.exists()
+#
+#     if "tok_step_status"  not in st.session_state:
+#         st.session_state.tok_step_status  = {}
+#     if "tok_step_outputs" not in st.session_state:
+#         st.session_state.tok_step_outputs = {}
+#
+#     for op_name, op_data in OPERATIONS.items():
+#         with st.expander(f"▶️ {op_name}", expanded=False):
+#             st.markdown(f"**{op_data['description']}**")
+#             st.markdown("---")
+#             st.code(op_data["code"], language=op_data.get("language", "python"))
+#
+#
+# # ─────────────────────────────────────────────────────────────────────────────
+# # UTILITY
+# # ─────────────────────────────────────────────────────────────────────────────
+# # render_operations() has been removed.  app.py owns all Streamlit rendering
+# # via its own render_operation() helper and strips callables from topic dicts
+# # inside load_topics_for() anyway — so a local render function is never called.
+#
+# def _strip_ansi(text):
+#     return re.compile(r'\x1b\[[0-9;]*m').sub('', text)
+#
+#
+# # ─────────────────────────────────────────────────────────────────────────────
+# # CONTENT EXPORT
+# # ─────────────────────────────────────────────────────────────────────────────
+#
+# def get_content():
+#     """Return all content for this topic module — single source of truth."""
+#     visual_html   = ""
+#     visual_height = 400
+#     try:
+#         from supervised.Required_images.linear_regression_visual import (   # ← match your exact folder casing
+#             LR_VISUAL_HTML,
+#             LR_VISUAL_HEIGHT,
+#         )
+#         visual_html   = LR_VISUAL_HTML.encode("utf-8", "surrogatepass").decode("utf-8", "ignore")
+#         visual_height = LR_VISUAL_HEIGHT
+#     except Exception as e:
+#         import warnings
+#         warnings.warn(f"[00_supervised_learning_core] Could not load visual: {e}", stacklevel=2)
+#
+#     return {
+#         "display_name":  DISPLAY_NAME,
+#         "icon":          ICON,
+#         "subtitle":      SUBTITLE,
+#         "theory":        THEORY,
+#         "visual_html":   visual_html,
+#         "visual_height": visual_height,
+#         "complexity":    COMPLEXITY,
+#         "operations":    OPERATIONS,
+#     }
+
+
+# Dedent all operation code strings — they're indented inside the dict literal,
+# so each line has ~20 leading spaces. textwrap.dedent removes the common indent,
+# producing clean left-aligned code that runs without IndentationError.
+for _op in OPERATIONS.values():
+    _op["code"] = textwrap.dedent(_op["code"]).strip()
+
+# ─────────────────────────────────────────────────────────────────────────────
+# RENDER OPERATIONS (Streamlit)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def render_operations(st, scripts_dir=None, main_script=None):
+    """Render all operations with code display and optional run buttons."""
+    import streamlit as st  # local import so module stays importable without st
+
+    st.markdown("---")
+    st.subheader("⚙️ Operations")
+
+    if scripts_dir is None:
+        scripts_dir = None
+    if main_script is None:
+        main_script = _MAIN_SCRIPT
+
+    scripts_available = main_script.exists()
+
+    if "tok_step_status"  not in st.session_state:
+        st.session_state.tok_step_status  = {}
+    if "tok_step_outputs" not in st.session_state:
+        st.session_state.tok_step_outputs = {}
+
+    for op_name, op_data in OPERATIONS.items():
+        with st.expander(f"▶️ {op_name}", expanded=False):
+            st.markdown(f"**{op_data['description']}**")
+            st.markdown("---")
+            st.code(op_data["code"], language=op_data.get("language", "python"))
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# UTILITY
+# ─────────────────────────────────────────────────────────────────────────────
+# render_operations() has been removed.  app.py owns all Streamlit rendering
+# via its own render_operation() helper and strips callables from topic dicts
+# inside load_topics_for() anyway — so a local render function is never called.
+
+def _strip_ansi(text):
+    return re.compile(r'\x1b\[[0-9;]*m').sub('', text)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CONTENT EXPORT
+# ─────────────────────────────────────────────────────────────────────────────
+#
+# def get_content():
+#     """Return all content for this topic module — single source of truth."""
+#     # ── Interactive visual ────────────────────────────────────────────────────
+#     visual_html   = ""
+#     visual_height = 400
+#     try:
+#         from supervised.Required_images.SL_Core import (
+#             SL_CORE_HTML,
+#             SL_CORE_HEIGHT,
+#         )
+#         # Strip any surrogate characters that JavaScript unicode escape sequences
+#         # (e.g. \uD83D\uDCA1) leave behind when Python parses the string.
+#         # encode with surrogatepass to handle them, then decode back to clean utf-8.
+#         visual_html   = SL_CORE_HTML.encode("utf-8", "surrogatepass").decode("utf-8", "ignore")
+#         visual_height = SL_CORE_HEIGHT
+#     except Exception as e:
+#         import warnings
+#         warnings.warn(
+#             f"[01_tokenization_embeddings] Could not load visual: {e}",
+#             stacklevel=2,
+#         )
+#
+#     # ── Optional static image ────────────────────────────────────────────────
+#     _PNG_PATH = "Required_Images/Tokenization_Breakdown.png"
+#     tok_img = (
+#         _image_to_html(_PNG_PATH, alt="Supervised Learning Models", width="80%")
+#         if os.path.exists(_PNG_PATH)
+#         else ""
+#     )
+#
+#     theory_with_images = THEORY.replace("{{SL_IMAGE}}", tok_img)
+#
+#     interactive_components = [
+#         {
+#             "placeholder": "{{SL_IMAGE}}",
+#             "html":        visual_html,
+#             "height":      visual_height,
+#         }
+#     ]
+#
+#     return {
+#         "display_name":           DISPLAY_NAME,
+#         "icon":                   ICON,
+#         "subtitle":               SUBTITLE,
+#         "theory":                 theory_with_images,
+#         "theory_raw":             THEORY,
+#         "visual_html":            visual_html,
+#         "visual_height":          visual_height,          # Bug 2 fix: was missing, app.py needs this
+#         "complexity":             None, #COMPLEXITY ,
+#         "operations":             OPERATIONS,
+#         # render_operations removed: app.py strips all callables via load_topics_for()
+#         # so it was silently discarded. app.py renders operations itself.
+#         "interactive_components": interactive_components,
+#     }
+
 def get_content():
-    """Return all content for this topic module."""
+    """Return all content for this topic module — single source of truth."""
+    visual_html   = ""
+    visual_height = 400
+    try:
+        from supervised.Required_images.linear_regression_visual import (   # ← match your exact folder casing
+            LR_VISUAL_HTML,
+            LR_VISUAL_HEIGHT,
+        )
+        visual_html   = LR_VISUAL_HTML.encode("utf-8", "surrogatepass").decode("utf-8", "ignore")
+        visual_height = LR_VISUAL_HEIGHT
+    except Exception as e:
+        import warnings
+        warnings.warn(f"[01_linear_regression.py] Could not load visual: {e}", stacklevel=2)
+
     return {
-        "theory":               THEORY,
-        "theory_raw":           THEORY,
-        "complexity":           COMPLEXITY,
-        "operations":           OPERATIONS,
-        "interactive_components": [],
+        "display_name":  DISPLAY_NAME,
+        "icon":          ICON,
+        "subtitle":      SUBTITLE,
+        "theory":        THEORY,
+        "visual_html":   visual_html,
+        "visual_height": visual_height,
+        "complexity":    COMPLEXITY,
+        "operations":    OPERATIONS,
     }

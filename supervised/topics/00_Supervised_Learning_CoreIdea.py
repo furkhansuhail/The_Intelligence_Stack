@@ -1,8 +1,39 @@
 """Module 00 · Supervised Learning Core Idea"""
+import os
+import re
+import sys
+import subprocess
+from pathlib import Path
+import base64
+import textwrap
+
+# ─────────────────────────────────────────────────────────────────────────────
+# PATH SETUP
+# ─────────────────────────────────────────────────────────────────────────────
+
+_THIS_DIR    = Path(__file__).resolve().parent
+_PROJECT_ROOT = _THIS_DIR.parent
+_SCRIPTS_DIR  = None # _PROJECT_ROOT / "supervised" / "" / "scripts"
+_MAIN_SCRIPT  = None # _SCRIPTS_DIR / "tokenization_main.py"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# IMAGE HELPER
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _image_to_html(path, alt="", width="100%"):
+    if os.path.exists(path):
+        with open(path, "rb") as f:
+            b64 = base64.b64encode(f.read()).decode()
+        ext  = os.path.splitext(path)[1].lstrip(".").lower()
+        mime = {"png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg",
+                "gif": "image/gif",  "svg": "image/svg+xml"}.get(ext, "image/png")
+        return (f'<img src="data:{mime};base64,{b64}" alt="{alt}" '
+                f'style="width:{width}; border-radius:8px; margin:12px 0;">')
+    return f'<p style="color:red;">️ Image not found: {path}</p>'
 
 DISPLAY_NAME = "00 · Supervised Learning Core Idea"
 ICON         = "📈"
-SUBTITLE     = "The Fundemental of Supervised Learning"
+SUBTITLE     = "The Fundamental of Supervised Learning"
 
 THEORY = """
 
@@ -759,9 +790,260 @@ metric meets your acceptance criteria for the application. It's a human judgment
 not a mathematical absolute.
 
 
+
+Supervised Learning Algorithms — Comprehensive List:
+
+Regression Algorithms (predicting continuous values)
+    * Linear Regression
+    * Polynomial Regression
+    * Ridge Regression (L2 Regularization)
+    * Lasso Regression (L1 Regularization)
+    * Elastic Net Regression
+    * Bayesian Linear Regression
+    * Stepwise Regression
+    * Quantile Regression
+    * Poisson Regression
+    * Tobit Regression
+    
+Classification Algorithms (predicting discrete categories)
+    * Logistic Regression
+    * Linear Discriminant Analysis (LDA)
+    * Quadratic Discriminant Analysis (QDA)
+    * Naive Bayes (Gaussian, Multinomial, Bernoulli, Complement)
+    * K-Nearest Neighbors (KNN)
+    * Perceptron
+    
+Tree-Based Algorithms
+    * Decision Tree (CART, ID3, C4.5, C5.0)
+    * Random Forest
+    * Extra Trees (Extremely Randomized Trees)
+    * Gradient Boosting Machine (GBM)
+    * XGBoost
+    * LightGBM
+    * CatBoost
+    * AdaBoost
+    * Stochastic Gradient Boosting
+    * Isolation Forest (can be adapted - unsupervised)
+
+Support Vector Machines (SVM)
+    * Support Vector Classifier (SVC) — Linear, RBF, Polynomial, Sigmoid kernels
+    * Support Vector Regression (SVR)
+    * Nu-SVC / Nu-SVR
+    * Least Squares SVM (LS-SVM)
+
+Neural Network / Deep Learning Algorithms
+    * Feedforward Neural Network (Multilayer Perceptron — MLP)
+    * Convolutional Neural Network (CNN)
+    * Recurrent Neural Network (RNN)
+    * Long Short-Term Memory (LSTM)
+    * Gated Recurrent Unit (GRU)
+    * Transformer Models (BERT, GPT used for supervised fine-tuning)
+    * Radial Basis Function Network (RBFN)
+    * Capsule Networks
+
+Ensemble Methods
+    * Bagging (Bootstrap Aggregating)
+    * Boosting (AdaBoost, Gradient Boosting, XGBoost, etc.)
+    * Stacking (Stacked Generalization)
+    * Voting Classifiers (Hard & Soft Voting)
+    * Blending
+
+Probabilistic / Bayesian Methods
+    * Naive Bayes Classifier
+    * Bayesian Networks
+    * Gaussian Process Regression / Classification
+    * Hidden Markov Models (HMM) (supervised variant)
+    * Bayesian Ridge Regression
+
+Instance-Based / Lazy Learning
+    * K-Nearest Neighbors (KNN) — Regression & Classification
+    * Learning Vector Quantization (LVQ)
+    * Locally Weighted Linear Regression (LWLR)
+    * Case-Based Reasoning (CBR)
+
+Regularization-Based Models
+    * Ridge Regression
+    * Lasso Regression
+    * Elastic Net
+    * Dropout Neural Networks
+    * Early Stopping
+
+Linear Models (Generalized)
+    * Generalized Linear Models (GLM)
+    * Generalized Additive Models (GAM)
+    * Logit / Probit Models
+    * Tweedie Regression
+
+Rule-Based Methods
+    * RIPPER (Repeated Incremental Pruning to Produce Error Reduction)
+    * OneR (One Rule)
+    * ZeroR
+    * Decision Lists
+    * Association Rule Classifiers (e.g., CBA — Classification Based on Associations)
+
+Ranking / Structured Output
+    * RankNet
+    * RankBoost
+    * LambdaMART
+    * Structured SVMs
+    * Conditional Random Fields (CRF) (supervised)
+
+Other Notable Algorithms
+    * Passive-Aggressive Algorithms
+    * SGD Classifier / Regressor
+    * Multi-Task Lasso / Multi-Task Elastic Net
+    * Orthogonal Matching Pursuit
+    * RANSAC (Robust regression)
+    * Isotonic Regression
+    * Theil-Sen Estimator
+    * Huber Regression
+
+Quick Summary by Output Type
+
+    Output Type                  Examples
+──────────────────────────┼───────────────────────────────────────────────────
+    Continuous value      │      Linear Regression, SVR, Gaussian Process
+    Binary class          │      Logistic Regression, SVM, KNN
+    Multi-class           │      Random Forest, Neural Networks, Naive Bayes
+    Sequence/structured   │      CRF, HMM, LSTMs
+    Ranking               │      RankNet, LambdaMART
+──────────────────────────┼────────────────────────────────────────────────────
+
 """
 
 OPERATIONS = {
 }
 
-VISUAL_HTML = ""  # Add your HTML visual breakdown here
+# VISUAL_HTML = ""  # Add your HTML visual breakdown here
+
+# Dedent all operation code strings — they're indented inside the dict literal,
+# so each line has ~20 leading spaces. textwrap.dedent removes the common indent,
+# producing clean left-aligned code that runs without IndentationError.
+for _op in OPERATIONS.values():
+    _op["code"] = textwrap.dedent(_op["code"]).strip()
+
+# ─────────────────────────────────────────────────────────────────────────────
+# RENDER OPERATIONS (Streamlit)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def render_operations(st, scripts_dir=None, main_script=None):
+    """Render all operations with code display and optional run buttons."""
+    import streamlit as st  # local import so module stays importable without st
+
+    st.markdown("---")
+    st.subheader("⚙️ Operations")
+
+    if scripts_dir is None:
+        scripts_dir = None
+    if main_script is None:
+        main_script = _MAIN_SCRIPT
+
+    scripts_available = main_script.exists()
+
+    if "tok_step_status"  not in st.session_state:
+        st.session_state.tok_step_status  = {}
+    if "tok_step_outputs" not in st.session_state:
+        st.session_state.tok_step_outputs = {}
+
+    for op_name, op_data in OPERATIONS.items():
+        with st.expander(f"▶️ {op_name}", expanded=False):
+            st.markdown(f"**{op_data['description']}**")
+            st.markdown("---")
+            st.code(op_data["code"], language=op_data.get("language", "python"))
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# UTILITY
+# ─────────────────────────────────────────────────────────────────────────────
+# render_operations() has been removed.  app.py owns all Streamlit rendering
+# via its own render_operation() helper and strips callables from topic dicts
+# inside load_topics_for() anyway — so a local render function is never called.
+
+def _strip_ansi(text):
+    return re.compile(r'\x1b\[[0-9;]*m').sub('', text)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CONTENT EXPORT
+# ─────────────────────────────────────────────────────────────────────────────
+#
+# def get_content():
+#     """Return all content for this topic module — single source of truth."""
+#     # ── Interactive visual ────────────────────────────────────────────────────
+#     visual_html   = ""
+#     visual_height = 400
+#     try:
+#         from supervised.Required_images.SL_Core import (
+#             SL_CORE_HTML,
+#             SL_CORE_HEIGHT,
+#         )
+#         # Strip any surrogate characters that JavaScript unicode escape sequences
+#         # (e.g. \uD83D\uDCA1) leave behind when Python parses the string.
+#         # encode with surrogatepass to handle them, then decode back to clean utf-8.
+#         visual_html   = SL_CORE_HTML.encode("utf-8", "surrogatepass").decode("utf-8", "ignore")
+#         visual_height = SL_CORE_HEIGHT
+#     except Exception as e:
+#         import warnings
+#         warnings.warn(
+#             f"[01_tokenization_embeddings] Could not load visual: {e}",
+#             stacklevel=2,
+#         )
+#
+#     # ── Optional static image ────────────────────────────────────────────────
+#     _PNG_PATH = "Required_Images/Tokenization_Breakdown.png"
+#     tok_img = (
+#         _image_to_html(_PNG_PATH, alt="Supervised Learning Models", width="80%")
+#         if os.path.exists(_PNG_PATH)
+#         else ""
+#     )
+#
+#     theory_with_images = THEORY.replace("{{SL_IMAGE}}", tok_img)
+#
+#     interactive_components = [
+#         {
+#             "placeholder": "{{SL_IMAGE}}",
+#             "html":        visual_html,
+#             "height":      visual_height,
+#         }
+#     ]
+#
+#     return {
+#         "display_name":           DISPLAY_NAME,
+#         "icon":                   ICON,
+#         "subtitle":               SUBTITLE,
+#         "theory":                 theory_with_images,
+#         "theory_raw":             THEORY,
+#         "visual_html":            visual_html,
+#         "visual_height":          visual_height,          # Bug 2 fix: was missing, app.py needs this
+#         "complexity":             None, #COMPLEXITY ,
+#         "operations":             OPERATIONS,
+#         # render_operations removed: app.py strips all callables via load_topics_for()
+#         # so it was silently discarded. app.py renders operations itself.
+#         "interactive_components": interactive_components,
+#     }
+
+def get_content():
+    """Return all content for this topic module — single source of truth."""
+    visual_html   = ""
+    visual_height = 400
+    try:
+        from supervised.Required_images.SL_Core import (   # ← match your exact folder casing
+            SL_CORE_HTML,
+            SL_CORE_HEIGHT,
+        )
+        visual_html   = SL_CORE_HTML.encode("utf-8", "surrogatepass").decode("utf-8", "ignore")
+        visual_height = SL_CORE_HEIGHT
+    except Exception as e:
+        import warnings
+        warnings.warn(f"[00_supervised_learning_core] Could not load visual: {e}", stacklevel=2)
+
+    return {
+        "display_name":  DISPLAY_NAME,
+        "icon":          ICON,
+        "subtitle":      SUBTITLE,
+        "theory":        THEORY,
+        "visual_html":   visual_html,
+        "visual_height": visual_height,
+        "complexity":    None,
+        "operations":    OPERATIONS,
+    }

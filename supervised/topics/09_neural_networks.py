@@ -24,6 +24,8 @@ learning models — CNNs, Transformers, LLMs — that power modern AI.
 
 import base64
 import os
+import re
+import textwrap
 
 DISPLAY_NAME = "09 · Neural Networks (Supervised)"
 ICON         = "🧠"
@@ -121,24 +123,24 @@ A network of such neurons can compute ANY Boolean function — it is Turing comp
 
 ### Neural Networks in the ERM Framework
 
-    ┌─────────────────────────────────────────────────────────────┐
-    │                                                             │
-    │  Hypothesis class:  H = { all functions representable by   │
-    │                           a network with L layers and given │
-    │                           widths and activations }          │
-    │                     (enormously expressive — Universal      │
-    │                      Approximation Theorem: any continuous  │
-    │                      function on a compact set can be       │
-    │                      approximated by a 2-layer network)     │
-    │                                                             │
-    │  Loss function:     MSE (regression), BCE / CE (classif.)  │
-    │                     Any differentiable loss is compatible   │
-    │                                                             │
-    │  Optimiser:         Gradient descent (SGD / Adam) via       │
+    ┌──────────────────────────────────────────────────────────────┐
+    │                                                              │
+    │  Hypothesis class:  H = { all functions representable by     │
+    │                           a network with L layers and given  │
+    │                           widths and activations }           │
+    │                     (enormously expressive — Universal       │
+    │                      Approximation Theorem: any continuous   │
+    │                      function on a compact set can be        │
+    │                      approximated by a 2-layer network)      │
+    │                                                              │
+    │  Loss function:     MSE (regression), BCE / CE (classif.)    │
+    │                     Any differentiable loss is compatible    │
+    │                                                              │
+    │  Optimiser:         Gradient descent (SGD / Adam) via        │
     │                     BACKPROPAGATION — the chain rule applied │
     │                     efficiently through the computation graph│
-    │                                                             │
-    └─────────────────────────────────────────────────────────────┘
+    │                                                              │
+    └──────────────────────────────────────────────────────────────┘
 
 The ERM comparison across all 9 modules:
     Linear Regression:    MSE,  gradient descent, closed-form optimal
@@ -2116,16 +2118,96 @@ if __name__ == "__main__":
     """)
 
 
+# # ─────────────────────────────────────────────────────────────────────────────
+# # CONTENT EXPORT
+# # ─────────────────────────────────────────────────────────────────────────────
+#
+# def get_content():
+#     return {
+#         "theory": THEORY,
+#         "theory_raw": THEORY,
+#         "complexity": COMPLEXITY,
+#         "operations": OPERATIONS,
+#         "interactive_components": [],
+#     }
+
+
+# Dedent all operation code strings — they're indented inside the dict literal,
+# so each line has ~20 leading spaces. textwrap.dedent removes the common indent,
+# producing clean left-aligned code that runs without IndentationError.
+for _op in OPERATIONS.values():
+    _op["code"] = textwrap.dedent(_op["code"]).strip()
+
+# ─────────────────────────────────────────────────────────────────────────────
+# RENDER OPERATIONS (Streamlit)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def render_operations(st, scripts_dir=None, main_script=None):
+    """Render all operations with code display and optional run buttons."""
+    import streamlit as st  # local import so module stays importable without st
+
+    st.markdown("---")
+    st.subheader("⚙️ Operations")
+
+    if scripts_dir is None:
+        scripts_dir = None
+    if main_script is None:
+        main_script = None # _MAIN_SCRIPT
+
+    scripts_available = main_script.exists()
+
+    if "tok_step_status"  not in st.session_state:
+        st.session_state.tok_step_status  = {}
+    if "tok_step_outputs" not in st.session_state:
+        st.session_state.tok_step_outputs = {}
+
+    for op_name, op_data in OPERATIONS.items():
+        with st.expander(f"▶️ {op_name}", expanded=False):
+            st.markdown(f"**{op_data['description']}**")
+            st.markdown("---")
+            st.code(op_data["code"], language=op_data.get("language", "python"))
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# UTILITY
+# ─────────────────────────────────────────────────────────────────────────────
+# render_operations() has been removed.  app.py owns all Streamlit rendering
+# via its own render_operation() helper and strips callables from topic dicts
+# inside load_topics_for() anyway — so a local render function is never called.
+
+def _strip_ansi(text):
+    return re.compile(r'\x1b\[[0-9;]*m').sub('', text)
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # CONTENT EXPORT
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 def get_content():
+    """Return all content for this topic module — single source of truth."""
+    visual_html   = ""
+    visual_height = 400
+    try:
+        from supervised.Required_images.neural_network_visual import (   # ← match your exact folder casing
+            NN_VISUAL_HTML,
+            NN_VISUAL_HEIGHT,
+        )
+        visual_html   = NN_VISUAL_HTML.encode("utf-8", "surrogatepass").decode("utf-8", "ignore")
+        visual_height = NN_VISUAL_HEIGHT
+    except Exception as e:
+        import warnings
+        warnings.warn(f"[09_neural_networks.py] Could not load visual: {e}", stacklevel=2)
+
     return {
-        "theory": THEORY,
-        "theory_raw": THEORY,
-        "complexity": COMPLEXITY,
-        "operations": OPERATIONS,
-        "interactive_components": [],
+        "display_name":  DISPLAY_NAME,
+        "icon":          ICON,
+        "subtitle":      SUBTITLE,
+        "theory":        THEORY,
+        "visual_html":   visual_html,
+        "visual_height": visual_height,
+        "complexity":    COMPLEXITY,
+        "operations":    OPERATIONS,
     }
+
 

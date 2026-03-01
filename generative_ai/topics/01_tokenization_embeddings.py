@@ -1,5 +1,5 @@
 """Module 01: Tokenization & Embeddings"""
-from deep_learning.Required_Images.tokenization_visual import get_visual_html
+from generative_ai.Required_Images.tokenization_visual import TOK_EMBED_HTML, TOK_EMBED_HEIGHT
 
 import os
 import re
@@ -1539,6 +1539,9 @@ def render_operations(st, scripts_dir=None, main_script=None):
 # ─────────────────────────────────────────────────────────────────────────────
 # UTILITY
 # ─────────────────────────────────────────────────────────────────────────────
+# render_operations() has been removed.  app.py owns all Streamlit rendering
+# via its own render_operation() helper and strips callables from topic dicts
+# inside load_topics_for() anyway — so a local render function is never called.
 
 def _strip_ansi(text):
     return re.compile(r'\x1b\[[0-9;]*m').sub('', text)
@@ -1548,39 +1551,36 @@ def _strip_ansi(text):
 # CONTENT EXPORT
 # ─────────────────────────────────────────────────────────────────────────────
 
-# def get_topic_data():
-#     """Return all content for this topic module (legacy interface)."""
-#     return get_content()
-
-def get_topic_data():
-    try:
-        visual_html = get_visual_html()
-    except Exception:
-        visual_html = ""
-    return {
-        "display_name": DISPLAY_NAME,
-        "icon": ICON,
-        "subtitle": SUBTITLE,
-        "theory": THEORY,
-        "visual_html": visual_html,
-        "operations": OPERATIONS,
-    }
-
 def get_content():
-    """Return all content for this topic module."""
+    """Return all content for this topic module — single source of truth."""
+    # ── Interactive visual ────────────────────────────────────────────────────
+    visual_html   = ""
+    visual_height = 400
     try:
-        from Required_Images.tokenization_visual import get_visual_html, VISUAL_HEIGHT
-        visual_html   = get_visual_html()
-        visual_height = VISUAL_HEIGHT
-    except Exception:
-        visual_html   = ""
-        visual_height = 400
+        from generative_ai.Required_Images.tokenization_visual import (
+            TOK_EMBED_HTML,
+            TOK_EMBED_HEIGHT,
+        )
+        # Strip any surrogate characters that JavaScript unicode escape sequences
+        # (e.g. \uD83D\uDCA1) leave behind when Python parses the string.
+        # encode with surrogatepass to handle them, then decode back to clean utf-8.
+        visual_html   = TOK_EMBED_HTML.encode("utf-8", "surrogatepass").decode("utf-8", "ignore")
+        visual_height = TOK_EMBED_HEIGHT
+    except Exception as e:
+        import warnings
+        warnings.warn(
+            f"[01_tokenization_embeddings] Could not load visual: {e}",
+            stacklevel=2,
+        )
 
-    tok_img = _image_to_html(
-        "Required_Images/Tokenization_Breakdown.png",
-        alt="Tokenization & Embedding Pipeline",
-        width="80%",
+    # ── Optional static image ────────────────────────────────────────────────
+    _PNG_PATH = "Required_Images/Tokenization_Breakdown.png"
+    tok_img = (
+        _image_to_html(_PNG_PATH, alt="Tokenization & Embedding Pipeline", width="80%")
+        if os.path.exists(_PNG_PATH)
+        else ""
     )
+
     theory_with_images = THEORY.replace("{{TOKENIZATION_IMAGE}}", tok_img)
 
     interactive_components = [
@@ -1592,14 +1592,16 @@ def get_content():
     ]
 
     return {
-        "display_name":          DISPLAY_NAME,
-        "icon":                  ICON,
-        "subtitle":              SUBTITLE,
-        "theory":                theory_with_images,
-        "theory_raw":            THEORY,
-        "visual_html":           visual_html,
-        "complexity":            COMPLEXITY,
-        "operations":            OPERATIONS,
-        "render_operations":     render_operations,
+        "display_name":           DISPLAY_NAME,
+        "icon":                   ICON,
+        "subtitle":               SUBTITLE,
+        "theory":                 theory_with_images,
+        "theory_raw":             THEORY,
+        "visual_html":            visual_html,
+        "visual_height":          visual_height,          # Bug 2 fix: was missing, app.py needs this
+        "complexity":             COMPLEXITY,
+        "operations":             OPERATIONS,
+        # render_operations removed: app.py strips all callables via load_topics_for()
+        # so it was silently discarded. app.py renders operations itself.
         "interactive_components": interactive_components,
     }
