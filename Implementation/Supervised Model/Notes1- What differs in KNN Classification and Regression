@@ -1,0 +1,92 @@
+The Core Idea: Same Algorithm, Different Final Step
+
+Both files do identical work for steps 1–3:
+    1) Compute distance from new point to every training point
+    2) Sort by distance
+    3) Pick the K nearest neighbors
+
+The only thing that changes is what happens with those K neighbors in step 4. That single decision is what makes it classification or regression.
+
+The Exact Lines That Define the Task
+
+Classification — 01_KNN_Classification.py
+
+Line 100 — the sklearn import:
+
+    from sklearn.neighbors import KNeighborsClassifier
+
+Line 195 — where the model object is created:
+
+    self._model = KNeighborsClassifier(
+        n_neighbors=n_neighbors,
+        ...
+    )
+
+KNeighborsClassifier internally does a majority vote on the K neighbors' labels and returns a discrete class ("Malignant", "Benign", 0, 1, etc.).
+
+Regression — 06_KNN_Regression.py
+
+Line 92 — the sklearn import:
+
+    from sklearn.neighbors import KNeighborsRegressor
+
+Line 187 — where the model object is created:
+
+    self._model = KNeighborsRegressor(
+        n_neighbors=n_neighbors,
+        ...
+    )
+
+KNeighborsRegressor internally takes those same K neighbors and computes a mean of their Y values, returning a continuous number (e.g., 42.7, 183.2).
+
+The Metrics Confirm the Difference Too
+
+Since the output type changes, the evaluation metrics are completely different:
+
+Classification (lines 107–111) imports:
+
+    from sklearn.metrics import (
+        accuracy_score, precision_score, recall_score, f1_score,
+        roc_auc_score, confusion_matrix, classification_report ...
+    )
+
+These all measure how correctly it assigned categories.
+
+Regression (lines 98–99) imports:
+    from sklearn.metrics import (
+        mean_squared_error, mean_absolute_error, r2_score
+    )
+
+These all measure how close the predicted number was to the real number.
+
+Also: The Train/Test Split Differs
+
+Classification uses a stratified split to preserve class balance:
+
+    train_test_split(X, y, test_size=test_size, stratify=y, ...)
+
+Regression uses a plain split (stratify makes no sense for continuous values):
+    train_test_split(X, y, test_size=test_size, ...)
+
+Summary in One Table:
++---------------------+------------------------------+------------------------------+
+|                     | Classification               | Regression                   |
++---------------------+------------------------------+------------------------------+
+| sklearn class       | KNeighborsClassifier         | KNeighborsRegressor          |
++---------------------+------------------------------+------------------------------+
+| Final step on K     | Majority vote → discrete     | Average (mean) → continuous  |
+| neighbors           | label                        | number                       |
++---------------------+------------------------------+------------------------------+
+| Output              | A class ("Malignant")        | A number (42.7)              |
++---------------------+------------------------------+------------------------------+
+| Metrics             | Accuracy, F1, AUC,           | MSE, RMSE, MAE, R²           |
+|                     | Confusion Matrix             |                              |
++---------------------+------------------------------+------------------------------+
+| Train/test split    | stratify=y (preserves        | No stratify                  |
+|                     | class ratio)                 |                              |
++---------------------+------------------------------+------------------------------+
+| LabelEncoder        | Yes (encodes string labels)  | No (Y is already numeric)    |
++---------------------+------------------------------+------------------------------+
+
+The algorithm is identical up until that final aggregation step — swap Classifier for Regressor and the whole purpose
+of the model changes.

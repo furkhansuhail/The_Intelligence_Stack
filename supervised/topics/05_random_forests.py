@@ -19,6 +19,8 @@ generalisation error.
 
 import base64
 import os
+import textwrap
+import re
 
 DISPLAY_NAME = "05 · Random Forest"
 ICON         = "⚔️"
@@ -565,16 +567,16 @@ each one fitting the residual errors of the previous ensemble:
 # ─────────────────────────────────────────────────────────────────────────────
 
 COMPLEXITY = """
-    ──────────────────────────────────────────────────────────────────────────
-    Operation                   Complexity              Notes
-    ──────────────────────────────────────────────────────────────────────────
-    Training (B trees)          O(B · n · m · log n)    m = max_features
-    Prediction                  O(B · depth)            fast; parallelisable
-    OOB error computation       O(B · n_oob · depth)    free during training
-    MDI importance              O(B · n · m · log n)    during training
-    MDA / permutation imp.      O(B · n_oob · p)        post-training
-    Memory                      O(B · 2^depth)          B full trees stored
-    ──────────────────────────────────────────────────────────────────────────
+──────────────────────────────────────────────────────────────────────────
+Operation                   Complexity              Notes
+──────────────────────────────────────────────────────────────────────────
+Training (B trees)          O(B · n · m · log n)    m = max_features
+Prediction                  O(B · depth)            fast; parallelisable
+OOB error computation       O(B · n_oob · depth)    free during training
+MDI importance              O(B · n · m · log n)    during training
+MDA / permutation imp.      O(B · n_oob · p)        post-training
+Memory                      O(B · 2^depth)          B full trees stored
+──────────────────────────────────────────────────────────────────────────
 """
 
 
@@ -1679,17 +1681,95 @@ if __name__ == "__main__":
   11. Next step: Gradient Boosting trains trees sequentially to reduce bias too
     """)
 
+#
+# # ─────────────────────────────────────────────────────────────────────────────
+# # CONTENT EXPORT
+# # ─────────────────────────────────────────────────────────────────────────────
+#
+# def get_content():
+#     return {
+#         "theory":                THEORY,
+#         "theory_raw":            THEORY,
+#         "complexity":            COMPLEXITY,
+#         "operations":            OPERATIONS,
+#         "interactive_components": [],
+#     }
+#
+
+# Dedent all operation code strings — they're indented inside the dict literal,
+# so each line has ~20 leading spaces. textwrap.dedent removes the common indent,
+# producing clean left-aligned code that runs without IndentationError.
+for _op in OPERATIONS.values():
+    _op["code"] = textwrap.dedent(_op["code"]).strip()
+
+# ─────────────────────────────────────────────────────────────────────────────
+# RENDER OPERATIONS (Streamlit)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def render_operations(st, scripts_dir=None, main_script=None):
+    """Render all operations with code display and optional run buttons."""
+    import streamlit as st  # local import so module stays importable without st
+
+    st.markdown("---")
+    st.subheader("⚙️ Operations")
+
+    if scripts_dir is None:
+        scripts_dir = None
+    if main_script is None:
+        main_script = None # _MAIN_SCRIPT
+
+    scripts_available = main_script.exists()
+
+    if "tok_step_status"  not in st.session_state:
+        st.session_state.tok_step_status  = {}
+    if "tok_step_outputs" not in st.session_state:
+        st.session_state.tok_step_outputs = {}
+
+    for op_name, op_data in OPERATIONS.items():
+        with st.expander(f"▶️ {op_name}", expanded=False):
+            st.markdown(f"**{op_data['description']}**")
+            st.markdown("---")
+            st.code(op_data["code"], language=op_data.get("language", "python"))
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# UTILITY
+# ─────────────────────────────────────────────────────────────────────────────
+# render_operations() has been removed.  app.py owns all Streamlit rendering
+# via its own render_operation() helper and strips callables from topic dicts
+# inside load_topics_for() anyway — so a local render function is never called.
+
+def _strip_ansi(text):
+    return re.compile(r'\x1b\[[0-9;]*m').sub('', text)
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # CONTENT EXPORT
 # ─────────────────────────────────────────────────────────────────────────────
 
-def get_content():
-    return {
-        "theory":                THEORY,
-        "theory_raw":            THEORY,
-        "complexity":            COMPLEXITY,
-        "operations":            OPERATIONS,
-        "interactive_components": [],
-    }
 
+def get_content():
+    """Return all content for this topic module — single source of truth."""
+    visual_html   = ""
+    visual_height = 400
+    try:
+        from supervised.Required_images.random_forest_visual import (   # ← match your exact folder casing
+            RF_VISUAL_HTML,
+            RF_VISUAL_HEIGHT,
+        )
+        visual_html   = RF_VISUAL_HTML.encode("utf-8", "surrogatepass").decode("utf-8", "ignore")
+        visual_height = RF_VISUAL_HEIGHT
+    except Exception as e:
+        import warnings
+        warnings.warn(f"[03_svm.py] Could not load visual: {e}", stacklevel=2)
+
+    return {
+        "display_name":  DISPLAY_NAME,
+        "icon":          ICON,
+        "subtitle":      SUBTITLE,
+        "theory":        THEORY,
+        "visual_html":   visual_html,
+        "visual_height": visual_height,
+        "complexity":    COMPLEXITY,
+        "operations":    OPERATIONS,
+    }
